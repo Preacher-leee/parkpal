@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { ParkingProvider } from '@/context/parking/ParkingContext';
+import { ParkingProvider } from '@/context/ParkingContext';
 import BottomNavigation from '@/components/BottomNavigation';
 import MapView from '@/components/MapView';
 import HistoryView from '@/components/HistoryView';
