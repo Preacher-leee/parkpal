@@ -1,73 +1,23 @@
 
-// This file manually defines the types for our Supabase tables
-// without modifying the read-only src/integrations/supabase/types.ts file
+import { Database } from '@/integrations/supabase/types';
 
-// Define the structure for parking_locations table
-export interface ParkingLocationType {
-  id: string;
-  user_id: string;
-  latitude: number;
-  longitude: number;
-  address: string | null;
-  notes: string | null;
-  duration: number | null;
-  is_current: boolean;
-  created_at: string;
-  updated_at: string;
-}
+// Re-export the Database type
+export type { Database } from '@/integrations/supabase/types';
+
+// Type for parking_locations table rows
+export type ParkingLocationType = Database['public']['Tables']['parking_locations']['Row'];
 
 // Type for inserting a new parking location
-export interface InsertParkingLocationType {
-  id: string;
-  user_id: string;
-  latitude: number;
-  longitude: number;
-  address: string | null;
-  notes: string | null;
-  duration: number | null;
-  is_current: boolean;
-}
+export type InsertParkingLocationType = Database['public']['Tables']['parking_locations']['Insert'];
 
 // Type for updating a parking location
-export interface UpdateParkingLocationType {
-  id?: string;
-  user_id?: string;
-  latitude?: number;
-  longitude?: number;
-  address?: string | null;
-  notes?: string | null;
-  duration?: number | null;
-  is_current?: boolean;
-  updated_at?: string;
-}
+export type UpdateParkingLocationType = Database['public']['Tables']['parking_locations']['Update'];
 
 // Type for parking_timers table rows
-export interface ParkingTimerType {
-  id: string;
-  parking_id: string;
-  user_id: string;
-  start_time: string;
-  duration_minutes: number;
-  is_active: boolean;
-  created_at: string;
-}
+export type ParkingTimerType = Database['public']['Tables']['parking_timers']['Row'];
 
 // Type for inserting a new parking timer
-export interface InsertParkingTimerType {
-  id: string;
-  parking_id: string;
-  user_id: string;
-  start_time: string;
-  duration_minutes: number;
-  is_active: boolean;
-}
+export type InsertParkingTimerType = Database['public']['Tables']['parking_timers']['Insert'];
 
 // Type for updating a parking timer
-export interface UpdateParkingTimerType {
-  id?: string;
-  parking_id?: string;
-  user_id?: string;
-  start_time?: string;
-  duration_minutes?: number;
-  is_active?: boolean;
-}
+export type UpdateParkingTimerType = Database['public']['Tables']['parking_timers']['Update'];
