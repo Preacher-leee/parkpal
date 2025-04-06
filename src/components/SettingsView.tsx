@@ -142,7 +142,7 @@ const SettingsView: React.FC = () => {
         </CardHeader>
         <CardContent>
           <p className="text-sm">ParkPal v1.0.0</p>
-          <p className="text-sm text-parkpal-subtleText mt-1">© 2023 ParkPal Inc.</p>
+          <p className="text-sm text-parkpal-subtleText mt-1">© 2025 TLee Apps</p>
         </CardContent>
       </Card>
     </div>
