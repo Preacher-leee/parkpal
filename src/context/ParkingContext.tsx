@@ -1,11 +1,15 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/context/AuthContext'; // Import the AuthContext
+import { useAuth } from '@/context/AuthContext';
 import { ParkingLocation, Coordinates, TimerInfo } from '@/types';
-import { ParkingLocationType, InsertParkingLocationType, ParkingTimerType, InsertParkingTimerType } from '@/types/database';
+import { 
+  ParkingLocationType, 
+  InsertParkingLocationType, 
+  ParkingTimerType, 
+  InsertParkingTimerType 
+} from '@/types/database';
 
 interface ParkingContextType {
   currentLocation: Coordinates | null;
@@ -19,10 +23,8 @@ interface ParkingContextType {
   stopParkingTimer: () => void;
 }
 
-// Create context with a default value
 const ParkingContext = createContext<ParkingContextType | null>(null);
 
-// Custom hook for using the context
 export const useParkingContext = () => {
   const context = useContext(ParkingContext);
   if (!context) {
@@ -32,7 +34,7 @@ export const useParkingContext = () => {
 };
 
 export const ParkingProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { session } = useAuth(); // Get the session from AuthContext
+  const { session } = useAuth();
   const userId = session?.user?.id;
 
   const [currentLocation, setCurrentLocation] = useState<Coordinates | null>(null);
@@ -41,7 +43,6 @@ export const ParkingProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [parkingTimer, setParkingTimer] = useState<TimerInfo | null>(null);
   const [timerInterval, setTimerInterval] = useState<number | null>(null);
 
-  // Fetch current location
   useEffect(() => {
     const getCurrentPosition = () => {
       if ('geolocation' in navigator) {
@@ -72,19 +73,16 @@ export const ParkingProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     getCurrentPosition();
     
-    // Update position every 30 seconds
     const intervalId = setInterval(getCurrentPosition, 30000);
     
     return () => clearInterval(intervalId);
   }, []);
 
-  // Fetch parking data from Supabase when userId changes
   useEffect(() => {
     const fetchParkingData = async () => {
       if (!userId) return;
 
       try {
-        // Fetch current parking location
         const { data: currentParkingData, error: currentError } = await supabase
           .from('parking_locations')
           .select('*')
@@ -95,40 +93,41 @@ export const ParkingProvider: React.FC<{ children: React.ReactNode }> = ({ child
         if (currentError) throw currentError;
 
         if (currentParkingData) {
-          // Convert from database format to app format
+          const parkingData = currentParkingData as ParkingLocationType;
+          
           setCurrentParking({
-            id: currentParkingData.id,
+            id: parkingData.id,
             coordinates: {
-              latitude: currentParkingData.latitude,
-              longitude: currentParkingData.longitude
+              latitude: parkingData.latitude,
+              longitude: parkingData.longitude
             },
-            timestamp: new Date(currentParkingData.created_at).getTime(),
-            notes: currentParkingData.notes || undefined,
-            address: currentParkingData.address || undefined,
-            duration: currentParkingData.duration || undefined,
+            timestamp: new Date(parkingData.created_at).getTime(),
+            notes: parkingData.notes || undefined,
+            address: parkingData.address || undefined,
+            duration: parkingData.duration || undefined,
           });
 
-          // Check for active timer
           const { data: timerData, error: timerError } = await supabase
             .from('parking_timers')
             .select('*')
-            .eq('parking_id', currentParkingData.id)
+            .eq('parking_id', parkingData.id)
             .eq('is_active', true)
             .maybeSingle();
 
           if (timerError) throw timerError;
 
           if (timerData) {
+            const timer = timerData as ParkingTimerType;
+            
             setParkingTimer({
-              parkingId: timerData.parking_id,
-              startTime: new Date(timerData.start_time).getTime(),
-              duration: timerData.duration_minutes,
-              isActive: timerData.is_active,
+              parkingId: timer.parking_id,
+              startTime: new Date(timer.start_time).getTime(),
+              duration: timer.duration_minutes,
+              isActive: timer.is_active,
             });
           }
         }
 
-        // Fetch parking history
         const { data: historyData, error: historyError } = await supabase
           .from('parking_locations')
           .select('*')
@@ -139,8 +138,7 @@ export const ParkingProvider: React.FC<{ children: React.ReactNode }> = ({ child
         if (historyError) throw historyError;
 
         if (historyData) {
-          // Convert from database format to app format
-          const formattedHistory = historyData.map(item => ({
+          const formattedHistory = (historyData as ParkingLocationType[]).map(item => ({
             id: item.id,
             coordinates: {
               latitude: item.latitude,
@@ -167,7 +165,6 @@ export const ParkingProvider: React.FC<{ children: React.ReactNode }> = ({ child
     fetchParkingData();
   }, [userId]);
 
-  // Handle timer expiry notification
   useEffect(() => {
     if (!parkingTimer || !parkingTimer.isActive) {
       if (timerInterval !== null) {
@@ -184,19 +181,16 @@ export const ParkingProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const endTime = parkingTimer.startTime + (parkingTimer.duration * 60 * 1000);
       
       if (now >= endTime && parkingTimer.isActive) {
-        // Timer expired
         toast({
           title: 'Parking Time Expired',
           description: 'Your parking time has ended!',
           variant: 'destructive',
         });
         
-        // Update timer state and database
         stopParkingTimer();
       }
     };
 
-    // Check immediately and then every minute
     checkTimer();
     const interval = window.setInterval(checkTimer, 60000);
     setTimerInterval(interval);
@@ -228,7 +222,6 @@ export const ParkingProvider: React.FC<{ children: React.ReactNode }> = ({ child
     try {
       const parkingId = data.id || uuidv4();
       
-      // If there's an existing current parking, update it to not be current
       if (currentParking) {
         await supabase
           .from('parking_locations')
@@ -236,7 +229,6 @@ export const ParkingProvider: React.FC<{ children: React.ReactNode }> = ({ child
           .eq('id', currentParking.id);
       }
 
-      // Insert new parking location
       const newParkingLocation: InsertParkingLocationType = {
         id: parkingId,
         user_id: userId,
@@ -254,7 +246,6 @@ export const ParkingProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       if (error) throw error;
 
-      // Update local state
       const newParking: ParkingLocation = {
         id: parkingId,
         coordinates: data.coordinates,
@@ -286,7 +277,6 @@ export const ParkingProvider: React.FC<{ children: React.ReactNode }> = ({ child
     if (!currentParking || !userId) return;
 
     try {
-      // Update the database
       const { error } = await supabase
         .from('parking_locations')
         .update({ is_current: false })
@@ -294,12 +284,10 @@ export const ParkingProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       if (error) throw error;
 
-      // Also clear any active timers
       if (parkingTimer && parkingTimer.isActive) {
         await stopParkingTimer();
       }
 
-      // Update local state
       setCurrentParking(null);
       
       toast({
@@ -332,7 +320,6 @@ export const ParkingProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const timerId = uuidv4();
       const now = new Date();
       
-      // Insert into database
       const newTimer: InsertParkingTimerType = {
         id: timerId,
         parking_id: currentParking.id,
@@ -348,7 +335,6 @@ export const ParkingProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       if (error) throw error;
 
-      // Update local state
       setParkingTimer({
         parkingId: currentParking.id,
         startTime: now.getTime(),
@@ -374,7 +360,6 @@ export const ParkingProvider: React.FC<{ children: React.ReactNode }> = ({ child
     if (!parkingTimer || !userId) return;
 
     try {
-      // Update database
       const { error } = await supabase
         .from('parking_timers')
         .update({ is_active: false })
@@ -383,7 +368,6 @@ export const ParkingProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       if (error) throw error;
 
-      // Update local state
       setParkingTimer(prev => prev ? { ...prev, isActive: false } : null);
 
       toast({
