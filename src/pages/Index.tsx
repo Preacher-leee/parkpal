@@ -1,13 +1,44 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import React, { useState } from 'react';
+import { ParkingProvider } from '@/context/ParkingContext';
+import BottomNavigation from '@/components/BottomNavigation';
+import MapView from '@/components/MapView';
+import HistoryView from '@/components/HistoryView';
+import SettingsView from '@/components/SettingsView';
+import { View } from '@/types';
 
 const Index = () => {
+  const [activeView, setActiveView] = useState<View>('map');
+  
+  const renderView = () => {
+    switch (activeView) {
+      case 'map':
+        return <MapView />;
+      case 'history':
+        return <HistoryView />;
+      case 'settings':
+        return <SettingsView />;
+      default:
+        return <MapView />;
+    }
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
+    <ParkingProvider>
+      <div className="min-h-screen bg-parkpal-background">
+        <header className="bg-white parkpal-shadow">
+          <div className="container mx-auto py-4 px-4">
+            <h1 className="text-xl font-bold text-parkpal-primary">ParkPal</h1>
+          </div>
+        </header>
+        <main className="container mx-auto px-4 py-4">
+          <div className="pb-16">
+            {renderView()}
+          </div>
+        </main>
+        <BottomNavigation activeView={activeView} onChange={(view) => setActiveView(view as View)} />
       </div>
-    </div>
+    </ParkingProvider>
   );
 };
 
