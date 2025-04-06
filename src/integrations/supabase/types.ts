@@ -9,7 +9,107 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      parking_locations: {
+        Row: {
+          address: string | null
+          created_at: string | null
+          duration: number | null
+          id: string
+          is_current: boolean | null
+          latitude: number
+          longitude: number
+          notes: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string | null
+          duration?: number | null
+          id?: string
+          is_current?: boolean | null
+          latitude: number
+          longitude: number
+          notes?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string | null
+          duration?: number | null
+          id?: string
+          is_current?: boolean | null
+          latitude?: number
+          longitude?: number
+          notes?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      parking_timers: {
+        Row: {
+          created_at: string | null
+          duration_minutes: number
+          id: string
+          is_active: boolean
+          parking_id: string
+          start_time: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          duration_minutes: number
+          id?: string
+          is_active?: boolean
+          parking_id: string
+          start_time?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          duration_minutes?: number
+          id?: string
+          is_active?: boolean
+          parking_id?: string
+          start_time?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parking_timers_parking_id_fkey"
+            columns: ["parking_id"]
+            isOneToOne: false
+            referencedRelation: "parking_locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          full_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
