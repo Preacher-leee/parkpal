@@ -1,187 +1,420 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { ParkingLocation, TimerInfo } from '../types';
-import { mockParkingHistory } from '../lib/mockData';
-import { toast } from 'sonner';
+import { v4 as uuidv4 } from 'uuid';
+import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext'; // Import the AuthContext
+import { ParkingLocation, Coordinates, TimerInfo } from '@/types';
+import { ParkingLocationType, InsertParkingLocationType, ParkingTimerType, InsertParkingTimerType } from '@/types/database';
 
 interface ParkingContextType {
-  currentLocation: { latitude: number; longitude: number } | null;
-  parkingHistory: ParkingLocation[];
+  currentLocation: Coordinates | null;
   currentParking: ParkingLocation | null;
+  parkingHistory: ParkingLocation[];
   parkingTimer: TimerInfo | null;
-  saveParking: (parking: Omit<ParkingLocation, 'id' | 'timestamp'>) => void;
+  saveParking: (data: Partial<ParkingLocation>) => void;
   clearCurrentParking: () => void;
+  searchHistory: (query: string) => ParkingLocation[];
   startParkingTimer: (duration: number) => void;
   stopParkingTimer: () => void;
-  searchHistory: (query: string) => ParkingLocation[];
 }
 
-const ParkingContext = createContext<ParkingContextType | undefined>(undefined);
+// Create context with a default value
+const ParkingContext = createContext<ParkingContextType | null>(null);
+
+// Custom hook for using the context
+export const useParkingContext = () => {
+  const context = useContext(ParkingContext);
+  if (!context) {
+    throw new Error('useParkingContext must be used within a ParkingProvider');
+  }
+  return context;
+};
 
 export const ParkingProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // State
-  const [currentLocation, setCurrentLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-  const [parkingHistory, setParkingHistory] = useState<ParkingLocation[]>(mockParkingHistory);
+  const { session } = useAuth(); // Get the session from AuthContext
+  const userId = session?.user?.id;
+
+  const [currentLocation, setCurrentLocation] = useState<Coordinates | null>(null);
   const [currentParking, setCurrentParking] = useState<ParkingLocation | null>(null);
+  const [parkingHistory, setParkingHistory] = useState<ParkingLocation[]>([]);
   const [parkingTimer, setParkingTimer] = useState<TimerInfo | null>(null);
   const [timerInterval, setTimerInterval] = useState<number | null>(null);
 
-  // Get current location on mount
+  // Fetch current location
   useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setCurrentLocation({
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-          });
-        },
-        (error) => {
-          console.error('Error getting current location:', error);
-          // Set default location (New York City)
-          setCurrentLocation({
-            latitude: 40.7128,
-            longitude: -74.0060,
-          });
-        }
-      );
-    }
-
-    // Load parking data from localStorage
-    const savedParking = localStorage.getItem('currentParking');
-    if (savedParking) {
-      setCurrentParking(JSON.parse(savedParking));
-    }
-
-    const savedTimer = localStorage.getItem('parkingTimer');
-    if (savedTimer) {
-      const timer = JSON.parse(savedTimer);
-      setParkingTimer(timer);
-      
-      if (timer.isActive) {
-        startTimerInternal(timer);
-      }
-    }
-
-    return () => {
-      if (timerInterval !== null) {
-        clearInterval(timerInterval);
+    const getCurrentPosition = () => {
+      if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            setCurrentLocation({
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+            });
+          },
+          (error) => {
+            console.error('Error getting location:', error);
+            toast({
+              title: 'Location Error',
+              description: 'Unable to get your current location. Please check permissions.',
+              variant: 'destructive',
+            });
+          }
+        );
+      } else {
+        toast({
+          title: 'Location Not Supported',
+          description: 'Geolocation is not supported by your browser.',
+          variant: 'destructive',
+        });
       }
     };
+
+    getCurrentPosition();
+    
+    // Update position every 30 seconds
+    const intervalId = setInterval(getCurrentPosition, 30000);
+    
+    return () => clearInterval(intervalId);
   }, []);
 
-  // Save parking location
-  const saveParking = (parking: Omit<ParkingLocation, 'id' | 'timestamp'>) => {
-    const newParking: ParkingLocation = {
-      ...parking,
-      id: Date.now().toString(),
-      timestamp: Date.now(),
-    };
+  // Fetch parking data from Supabase when userId changes
+  useEffect(() => {
+    const fetchParkingData = async () => {
+      if (!userId) return;
 
-    setCurrentParking(newParking);
-    setParkingHistory((prev) => [newParking, ...prev]);
-    
-    // Save to localStorage
-    localStorage.setItem('currentParking', JSON.stringify(newParking));
-    
-    toast('Parking location saved!');
-  };
+      try {
+        // Fetch current parking location
+        const { data: currentParkingData, error: currentError } = await supabase
+          .from('parking_locations')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('is_current', true)
+          .maybeSingle();
 
-  // Clear current parking
-  const clearCurrentParking = () => {
-    setCurrentParking(null);
-    localStorage.removeItem('currentParking');
-  };
+        if (currentError) throw currentError;
 
-  // Start parking timer
-  const startParkingTimer = (duration: number) => {
-    if (!currentParking) return;
+        if (currentParkingData) {
+          // Convert from database format to app format
+          setCurrentParking({
+            id: currentParkingData.id,
+            coordinates: {
+              latitude: currentParkingData.latitude,
+              longitude: currentParkingData.longitude
+            },
+            timestamp: new Date(currentParkingData.created_at).getTime(),
+            notes: currentParkingData.notes || undefined,
+            address: currentParkingData.address || undefined,
+            duration: currentParkingData.duration || undefined,
+          });
 
-    const timer: TimerInfo = {
-      parkingId: currentParking.id,
-      startTime: Date.now(),
-      duration: duration,
-      isActive: true,
-    };
+          // Check for active timer
+          const { data: timerData, error: timerError } = await supabase
+            .from('parking_timers')
+            .select('*')
+            .eq('parking_id', currentParkingData.id)
+            .eq('is_active', true)
+            .maybeSingle();
 
-    setParkingTimer(timer);
-    localStorage.setItem('parkingTimer', JSON.stringify(timer));
-    
-    startTimerInternal(timer);
-    
-    toast('Parking timer started!');
-  };
+          if (timerError) throw timerError;
 
-  const startTimerInternal = (timer: TimerInfo) => {
-    // Check if there's already an interval running
-    if (timerInterval !== null) {
-      clearInterval(timerInterval);
-    }
+          if (timerData) {
+            setParkingTimer({
+              parkingId: timerData.parking_id,
+              startTime: new Date(timerData.start_time).getTime(),
+              duration: timerData.duration_minutes,
+              isActive: timerData.is_active,
+            });
+          }
+        }
 
-    // Start a new interval
-    const interval = window.setInterval(() => {
-      const now = Date.now();
-      const elapsedMinutes = (now - timer.startTime) / (1000 * 60);
-      
-      if (elapsedMinutes >= timer.duration) {
-        // Timer completed
-        stopParkingTimer();
-        toast('Parking time expired!');
+        // Fetch parking history
+        const { data: historyData, error: historyError } = await supabase
+          .from('parking_locations')
+          .select('*')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false })
+          .limit(50);
+
+        if (historyError) throw historyError;
+
+        if (historyData) {
+          // Convert from database format to app format
+          const formattedHistory = historyData.map(item => ({
+            id: item.id,
+            coordinates: {
+              latitude: item.latitude,
+              longitude: item.longitude
+            },
+            timestamp: new Date(item.created_at).getTime(),
+            notes: item.notes || undefined,
+            address: item.address || undefined,
+            duration: item.duration || undefined,
+          }));
+          
+          setParkingHistory(formattedHistory);
+        }
+      } catch (error) {
+        console.error('Error fetching parking data:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load your parking data.',
+          variant: 'destructive',
+        });
       }
-    }, 10000); // Check every 10 seconds
-    
+    };
+
+    fetchParkingData();
+  }, [userId]);
+
+  // Handle timer expiry notification
+  useEffect(() => {
+    if (!parkingTimer || !parkingTimer.isActive) {
+      if (timerInterval !== null) {
+        clearInterval(timerInterval);
+        setTimerInterval(null);
+      }
+      return;
+    }
+
+    const checkTimer = () => {
+      if (!parkingTimer) return;
+      
+      const now = Date.now();
+      const endTime = parkingTimer.startTime + (parkingTimer.duration * 60 * 1000);
+      
+      if (now >= endTime && parkingTimer.isActive) {
+        // Timer expired
+        toast({
+          title: 'Parking Time Expired',
+          description: 'Your parking time has ended!',
+          variant: 'destructive',
+        });
+        
+        // Update timer state and database
+        stopParkingTimer();
+      }
+    };
+
+    // Check immediately and then every minute
+    checkTimer();
+    const interval = window.setInterval(checkTimer, 60000);
     setTimerInterval(interval);
+    
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [parkingTimer]);
+
+  const saveParking = async (data: Partial<ParkingLocation>) => {
+    if (!userId) {
+      toast({
+        title: 'Authentication Required',
+        description: 'Please log in to save your parking location.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!data.coordinates) {
+      toast({
+        title: 'Error',
+        description: 'No location coordinates provided.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const parkingId = data.id || uuidv4();
+      
+      // If there's an existing current parking, update it to not be current
+      if (currentParking) {
+        await supabase
+          .from('parking_locations')
+          .update({ is_current: false })
+          .eq('id', currentParking.id);
+      }
+
+      // Insert new parking location
+      const newParkingLocation: InsertParkingLocationType = {
+        id: parkingId,
+        user_id: userId,
+        latitude: data.coordinates.latitude,
+        longitude: data.coordinates.longitude,
+        address: data.address || null,
+        notes: data.notes || null,
+        duration: data.duration || null,
+        is_current: true,
+      };
+
+      const { error } = await supabase
+        .from('parking_locations')
+        .insert(newParkingLocation);
+
+      if (error) throw error;
+
+      // Update local state
+      const newParking: ParkingLocation = {
+        id: parkingId,
+        coordinates: data.coordinates,
+        timestamp: Date.now(),
+        notes: data.notes,
+        address: data.address,
+        duration: data.duration,
+      };
+
+      setCurrentParking(newParking);
+      setParkingHistory(prev => [newParking, ...prev]);
+
+      toast({
+        title: 'Parking Saved',
+        description: 'Your parking location has been saved.',
+      });
+
+    } catch (error) {
+      console.error('Error saving parking:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to save parking location.',
+        variant: 'destructive',
+      });
+    }
   };
 
-  // Stop parking timer
-  const stopParkingTimer = () => {
-    if (timerInterval !== null) {
-      clearInterval(timerInterval);
-      setTimerInterval(null);
-    }
-    
-    if (parkingTimer) {
-      const updatedTimer = { ...parkingTimer, isActive: false };
-      setParkingTimer(updatedTimer);
-      localStorage.setItem('parkingTimer', JSON.stringify(updatedTimer));
+  const clearCurrentParking = async () => {
+    if (!currentParking || !userId) return;
+
+    try {
+      // Update the database
+      const { error } = await supabase
+        .from('parking_locations')
+        .update({ is_current: false })
+        .eq('id', currentParking.id);
+
+      if (error) throw error;
+
+      // Also clear any active timers
+      if (parkingTimer && parkingTimer.isActive) {
+        await stopParkingTimer();
+      }
+
+      // Update local state
+      setCurrentParking(null);
+      
+      toast({
+        title: 'Parking Cleared',
+        description: 'Your current parking has been cleared.',
+      });
+    } catch (error) {
+      console.error('Error clearing parking:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to clear parking location.',
+        variant: 'destructive',
+      });
     }
   };
 
-  // Search parking history
-  const searchHistory = (query: string): ParkingLocation[] => {
-    if (!query.trim()) return parkingHistory;
-    
+  const searchHistory = (query: string) => {
     const lowerQuery = query.toLowerCase();
-    
     return parkingHistory.filter(
-      (parking) =>
-        parking.address?.toLowerCase().includes(lowerQuery) ||
-        parking.notes?.toLowerCase().includes(lowerQuery)
+      parking => 
+        (parking.address && parking.address.toLowerCase().includes(lowerQuery)) ||
+        (parking.notes && parking.notes.toLowerCase().includes(lowerQuery))
     );
+  };
+
+  const startParkingTimer = async (duration: number) => {
+    if (!currentParking || !userId) return;
+
+    try {
+      const timerId = uuidv4();
+      const now = new Date();
+      
+      // Insert into database
+      const newTimer: InsertParkingTimerType = {
+        id: timerId,
+        parking_id: currentParking.id,
+        user_id: userId,
+        start_time: now.toISOString(),
+        duration_minutes: duration,
+        is_active: true
+      };
+
+      const { error } = await supabase
+        .from('parking_timers')
+        .insert(newTimer);
+
+      if (error) throw error;
+
+      // Update local state
+      setParkingTimer({
+        parkingId: currentParking.id,
+        startTime: now.getTime(),
+        duration: duration,
+        isActive: true
+      });
+
+      toast({
+        title: 'Timer Started',
+        description: `Parking timer set for ${duration} minutes.`,
+      });
+    } catch (error) {
+      console.error('Error starting timer:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to start parking timer.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const stopParkingTimer = async () => {
+    if (!parkingTimer || !userId) return;
+
+    try {
+      // Update database
+      const { error } = await supabase
+        .from('parking_timers')
+        .update({ is_active: false })
+        .eq('parking_id', parkingTimer.parkingId)
+        .eq('is_active', true);
+
+      if (error) throw error;
+
+      // Update local state
+      setParkingTimer(prev => prev ? { ...prev, isActive: false } : null);
+
+      toast({
+        title: 'Timer Stopped',
+        description: 'Your parking timer has been stopped.',
+      });
+    } catch (error) {
+      console.error('Error stopping timer:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to stop parking timer.',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
     <ParkingContext.Provider
       value={{
         currentLocation,
-        parkingHistory,
         currentParking,
+        parkingHistory,
         parkingTimer,
         saveParking,
         clearCurrentParking,
-        startParkingTimer,
-        stopParkingTimer,
         searchHistory,
+        startParkingTimer,
+        stopParkingTimer
       }}
     >
       {children}
     </ParkingContext.Provider>
   );
-};
-
-export const useParkingContext = () => {
-  const context = useContext(ParkingContext);
-  if (context === undefined) {
-    throw new Error('useParkingContext must be used within a ParkingProvider');
-  }
-  return context;
 };
