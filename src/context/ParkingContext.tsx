@@ -1,8 +1,7 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { ParkingLocation, TimerInfo } from '../types';
 import { mockParkingHistory } from '../lib/mockData';
-import { toast } from '@/components/ui/sonner';
+import { toast } from 'sonner';
 
 interface ParkingContextType {
   currentLocation: { latitude: number; longitude: number } | null;
