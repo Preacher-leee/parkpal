@@ -2,11 +2,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { ParkingLocation, TimerInfo } from '../types';
 import { v4 as uuidv4 } from 'uuid';
-import { mockParkingHistory } from '../lib/mockData';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { ParkingLocationType, ParkingTimerType } from '@/types/database';
+import { Database } from '@/integrations/supabase/types';
 
 interface ParkingContextType {
   currentLocation: { latitude: number; longitude: number } | null;
@@ -85,7 +85,7 @@ export const ParkingProvider: React.FC<{ children: React.ReactNode }> = ({ child
               latitude: Number(currentParkingData.latitude),
               longitude: Number(currentParkingData.longitude)
             },
-            timestamp: new Date(currentParkingData.created_at).getTime(),
+            timestamp: new Date(currentParkingData.created_at || '').getTime(),
             notes: currentParkingData.notes || undefined,
             address: currentParkingData.address || undefined,
             duration: currentParkingData.duration || undefined
@@ -129,7 +129,7 @@ export const ParkingProvider: React.FC<{ children: React.ReactNode }> = ({ child
               latitude: Number(item.latitude),
               longitude: Number(item.longitude)
             },
-            timestamp: new Date(item.created_at).getTime(),
+            timestamp: new Date(item.created_at || '').getTime(),
             notes: item.notes || undefined,
             address: item.address || undefined,
             duration: item.duration || undefined
