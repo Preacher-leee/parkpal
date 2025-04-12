@@ -10,6 +10,7 @@ import { View } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { LogIn, LogOut } from 'lucide-react';
+import Image from '@/components/ui/image'; // We'll need to add this component
 
 const Index = () => {
   const [activeView, setActiveView] = useState<View>('map');
@@ -34,7 +35,14 @@ const Index = () => {
       <div className="min-h-screen bg-parkpal-background">
         <header className="bg-white parkpal-shadow">
           <div className="container mx-auto py-4 px-4 flex justify-between items-center">
-            <h1 className="text-xl font-bold text-parkpal-primary">ParkPal</h1>
+            <div className="flex items-center space-x-2">
+              <Image 
+                src="/lovable-uploads/0e8d7186-739b-4184-838b-3a4558ed25d6.png" 
+                alt="ParkPal Logo" 
+                className="h-8 w-8 text-parkpal-primary fill-parkpal-primary"
+              />
+              <h1 className="text-xl font-bold text-parkpal-primary">ParkPal</h1>
+            </div>
             {user ? (
               <Button variant="outline" size="sm" onClick={() => signOut()}>
                 <LogOut className="h-4 w-4 mr-2" /> Sign Out
