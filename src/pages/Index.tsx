@@ -38,7 +38,7 @@ const Index = () => {
               <img 
                 src="/lovable-uploads/b65be2ea-73a1-40f4-9006-5a8c793b1905.png" 
                 alt="ParkPal Logo" 
-                className="h-8 w-8"
+                className="h-8 w-8 text-parkpal-primary fill-parkpal-primary"
               />
               <h1 className="text-xl font-bold text-parkpal-primary">ParkPal</h1>
             </div>
