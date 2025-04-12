@@ -5,7 +5,6 @@ import { Car, MapPin, Timer } from 'lucide-react';
 import { useParkingContext } from '@/context/ParkingContext';
 import ParkingForm from './ParkingForm';
 import ParkingTimer from './ParkingTimer';
-import RealMapView from './RealMapView';
 
 const MapView: React.FC = () => {
   const { currentLocation, currentParking, saveParking, clearCurrentParking } = useParkingContext();
@@ -27,9 +26,28 @@ const MapView: React.FC = () => {
 
   return (
     <div className="relative h-full w-full pb-20">
-      {/* Real Map View */}
-      <div className="bg-gray-100 h-full rounded-lg overflow-hidden shadow-md">
-        <RealMapView />
+      {/* Map placeholder - in a real app, this would be a real map component */}
+      <div className="bg-gray-100 h-full rounded-lg flex items-center justify-center">
+        <div className="text-center p-4">
+          {currentLocation ? (
+            <div>
+              <p className="text-lg">Current Location:</p>
+              <p className="text-sm">Lat: {currentLocation.latitude.toFixed(6)}</p>
+              <p className="text-sm">Lng: {currentLocation.longitude.toFixed(6)}</p>
+              {currentParking && (
+                <div className="mt-4">
+                  <p className="text-lg font-medium">Parked Car Location:</p>
+                  <p className="text-sm">Lat: {currentParking.coordinates.latitude.toFixed(6)}</p>
+                  <p className="text-sm">Lng: {currentParking.coordinates.longitude.toFixed(6)}</p>
+                  {currentParking.address && <p className="text-sm mt-1">{currentParking.address}</p>}
+                  {currentParking.notes && <p className="text-xs italic mt-1">"{currentParking.notes}"</p>}
+                </div>
+              )}
+            </div>
+          ) : (
+            <p>Loading current location...</p>
+          )}
+        </div>
       </div>
       
       {/* Floating action buttons */}
