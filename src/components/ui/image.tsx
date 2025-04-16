@@ -6,7 +6,7 @@ interface ImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
 }
 
 const Image: React.FC<ImageProps> = ({ className, ...props }) => {
-  return <img className={className} {...props} />;
+  return <img className={className} {...props} alt={props.alt || 'Image'} />;
 };
 
 export default Image;

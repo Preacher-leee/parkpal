@@ -5,6 +5,7 @@ import { Car, MapPin, Timer } from 'lucide-react';
 import { useParkingContext } from '@/context/ParkingContext';
 import ParkingForm from './ParkingForm';
 import ParkingTimer from './ParkingTimer';
+import MapComponent from './MapComponent';
 
 const MapView: React.FC = () => {
   const { currentLocation, currentParking, saveParking, clearCurrentParking } = useParkingContext();
@@ -26,12 +27,15 @@ const MapView: React.FC = () => {
 
   return (
     <div className="relative h-full w-full pb-20">
-      {/* Map placeholder - in a real app, this would be a real map component */}
-      <div className="bg-gray-100 h-full rounded-lg flex items-center justify-center">
-        <div className="text-center p-4">
+      {/* Real interactive map */}
+      <MapComponent className="h-64 mb-4 shadow-md" />
+      
+      {/* Location info */}
+      <div className="bg-white rounded-lg p-4 shadow-md">
+        <div className="text-center">
           {currentLocation ? (
             <div>
-              <p className="text-lg">Current Location:</p>
+              <p className="text-lg font-medium">Current Location:</p>
               <p className="text-sm">Lat: {currentLocation.latitude.toFixed(6)}</p>
               <p className="text-sm">Lng: {currentLocation.longitude.toFixed(6)}</p>
               {currentParking && (
