@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   Card,
@@ -10,10 +9,52 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Mic, Wallet, Wifi, WifiOff, CreditCard, Car, Bell } from 'lucide-react';
+import { Mic, Wallet, Wifi, WifiOff, CreditCard, Car, Bell, Loader2 } from 'lucide-react';
+import { toast } from "sonner";
+import { useAuth } from '@/context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 
 const SettingsView: React.FC = () => {
   const [isOffline, setIsOffline] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState(false);
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const handlePremiumUpgrade = async () => {
+    if (!user) {
+      toast("Please sign in to upgrade to Premium", {
+        description: "You need an account to subscribe to Premium features",
+        action: {
+          label: "Sign In",
+          onClick: () => navigate('/auth')
+        }
+      });
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase.functions.invoke('create-checkout');
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error('No checkout URL returned');
+      }
+    } catch (error) {
+      console.error('Error creating checkout session:', error);
+      toast.error("Couldn't create checkout session", {
+        description: "Please try again later or contact support."
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-6 pb-20 px-4">
@@ -124,8 +165,19 @@ const SettingsView: React.FC = () => {
             </div>
           </div>
           
-          <Button className="w-full mt-4 bg-gradient-to-r from-parkpal-primary to-blue-500 hover:from-parkpal-primary/90 hover:to-blue-600">
-            Upgrade to Premium
+          <Button 
+            className="w-full mt-4 bg-gradient-to-r from-parkpal-primary to-blue-500 hover:from-parkpal-primary/90 hover:to-blue-600"
+            onClick={handlePremiumUpgrade}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              "Upgrade to Premium"
+            )}
           </Button>
         </CardContent>
       </Card>
