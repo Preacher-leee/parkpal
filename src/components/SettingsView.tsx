@@ -1,3 +1,4 @@
+
 import React from 'react';
 import {
   Card,
@@ -13,7 +14,9 @@ import { Mic, Wallet, Wifi, WifiOff, CreditCard, Car, Bell, Loader2 } from 'luci
 import { toast } from "sonner";
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+
+// Stripe checkout URL provided by the user
+const STRIPE_CHECKOUT_URL = "https://buy.stripe.com/test_6oE4ho8aq3E86L6eUU";
 
 const SettingsView: React.FC = () => {
   const [isOffline, setIsOffline] = React.useState(false);
@@ -35,20 +38,11 @@ const SettingsView: React.FC = () => {
 
     try {
       setIsLoading(true);
-      const { data, error } = await supabase.functions.invoke('create-checkout');
-      
-      if (error) {
-        throw new Error(error.message);
-      }
-      
-      if (data?.url) {
-        window.location.href = data.url;
-      } else {
-        throw new Error('No checkout URL returned');
-      }
+      // Redirect to the Stripe checkout URL
+      window.location.href = STRIPE_CHECKOUT_URL;
     } catch (error) {
-      console.error('Error creating checkout session:', error);
-      toast.error("Couldn't create checkout session", {
+      console.error('Error redirecting to checkout:', error);
+      toast.error("Couldn't process your request", {
         description: "Please try again later or contact support."
       });
     } finally {
