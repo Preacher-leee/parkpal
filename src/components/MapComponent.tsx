@@ -1,12 +1,8 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useParkingContext } from '@/context/ParkingContext';
-import { pulse } from 'lucide-react';
 
-// This is a temporary token for development - in production, use environment variables
-// You should replace this with your own Mapbox token
 const MAPBOX_TOKEN = 'pk.eyJ1IjoibG92YWJsZS1haS10ZXN0IiwiYSI6ImNsdXh2cHcxYzAwaTYyaXFnaTJuOTltcmEifQ.LNhF8GzcP1SP54u33_tJ_g';
 
 interface MapComponentProps {
@@ -22,7 +18,6 @@ const MapComponent: React.FC<MapComponentProps> = ({ className }) => {
   
   const { currentLocation, currentParking, parkingTimer } = useParkingContext();
 
-  // Initialize map
   useEffect(() => {
     if (!mapContainer.current) return;
 
@@ -40,7 +35,6 @@ const MapComponent: React.FC<MapComponentProps> = ({ className }) => {
 
     newMap.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
     
-    // Add loading indicator
     newMap.on('load', () => {
       setMapLoaded(true);
     });
@@ -52,11 +46,9 @@ const MapComponent: React.FC<MapComponentProps> = ({ className }) => {
     };
   }, []);
 
-  // Update current location marker
   useEffect(() => {
     if (!map.current || !mapLoaded || !currentLocation) return;
     
-    // Create current location element
     const el = document.createElement('div');
     el.className = 'current-location-marker';
     el.innerHTML = `
@@ -65,7 +57,6 @@ const MapComponent: React.FC<MapComponentProps> = ({ className }) => {
       </div>
     `;
 
-    // Add or update current location marker
     if (currentMarker.current) {
       currentMarker.current.setLngLat([currentLocation.longitude, currentLocation.latitude]);
     } else {
@@ -74,7 +65,6 @@ const MapComponent: React.FC<MapComponentProps> = ({ className }) => {
         .addTo(map.current);
     }
 
-    // Center map on current location
     map.current.flyTo({
       center: [currentLocation.longitude, currentLocation.latitude],
       essential: true,
@@ -83,35 +73,28 @@ const MapComponent: React.FC<MapComponentProps> = ({ className }) => {
     
   }, [currentLocation, mapLoaded]);
 
-  // Update parking location marker
   useEffect(() => {
     if (!map.current || !mapLoaded) return;
 
-    // Remove previous parking marker if exists
     if (parkingMarker.current) {
       parkingMarker.current.remove();
       parkingMarker.current = null;
     }
 
-    // Add new parking marker if parking location exists
     if (currentParking) {
-      // Create element for the parking marker
       const el = document.createElement('div');
       el.className = 'parking-marker';
       
       let markerClass = "w-8 h-8 bg-green-600 rounded-full border-2 border-white flex items-center justify-center shadow-lg";
       
-      // If there's an active timer, adjust color based on status
       if (parkingTimer && parkingTimer.isActive) {
         const now = Date.now();
         const elapsedMinutes = (now - parkingTimer.startTime) / (1000 * 60);
         const remainingTime = parkingTimer.duration - elapsedMinutes;
         
-        // Warning color when less than 15 minutes remaining
         if (remainingTime < 15 && remainingTime > 0) {
           markerClass = "w-8 h-8 bg-amber-500 rounded-full border-2 border-white flex items-center justify-center shadow-lg animate-pulse";
         } 
-        // Expired color
         else if (remainingTime <= 0) {
           markerClass = "w-8 h-8 bg-red-600 rounded-full border-2 border-white flex items-center justify-center shadow-lg animate-pulse";
         }
@@ -128,12 +111,10 @@ const MapComponent: React.FC<MapComponentProps> = ({ className }) => {
         </div>
       `;
 
-      // Add the marker to the map
       parkingMarker.current = new mapboxgl.Marker(el)
         .setLngLat([currentParking.coordinates.longitude, currentParking.coordinates.latitude])
         .addTo(map.current);
 
-      // Fly to a view that shows both markers if current location exists
       if (currentLocation) {
         const bounds = new mapboxgl.LngLatBounds()
           .extend([currentLocation.longitude, currentLocation.latitude])
