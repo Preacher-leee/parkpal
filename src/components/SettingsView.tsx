@@ -10,11 +10,14 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Mic, Wallet, Wifi, WifiOff, CreditCard, Car, Bell } from 'lucide-react';
 
 const SettingsView: React.FC = () => {
+  const [isOffline, setIsOffline] = React.useState(false);
+
   return (
-    <div className="space-y-6 pb-20">
-      <div className="mb-6">
+    <div className="space-y-6 pb-20 px-4">
+      <div className="mb-6 pt-4">
         <h1 className="text-2xl font-bold">Settings</h1>
         <p className="text-parkpal-subtleText">Customize your ParkPal experience</p>
       </div>
@@ -26,110 +29,102 @@ const SettingsView: React.FC = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
-            <Label htmlFor="auto-detect" className="flex-1">
-              Auto-detect parking
-              <p className="text-sm font-normal text-parkpal-subtleText">
-                Automatically detect when you've parked
-              </p>
+            <Label htmlFor="offline-mode" className="flex items-center gap-2">
+              {isOffline ? <WifiOff size={16} /> : <Wifi size={16} />}
+              <div>
+                <span className="block">Offline Mode</span>
+                <p className="text-sm font-normal text-parkpal-subtleText">
+                  Use app without an internet connection
+                </p>
+              </div>
+            </Label>
+            <Switch 
+              id="offline-mode" 
+              checked={isOffline} 
+              onCheckedChange={setIsOffline}
+            />
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <Label htmlFor="auto-detect" className="flex items-center gap-2">
+              <Car size={16} />
+              <div>
+                <span className="block">Auto-detect parking</span>
+                <p className="text-sm font-normal text-parkpal-subtleText">
+                  Automatically detect when you've parked
+                </p>
+              </div>
             </Label>
             <Switch id="auto-detect" />
           </div>
           
           <div className="flex items-center justify-between">
-            <Label htmlFor="location-services" className="flex-1">
-              Location services
-              <p className="text-sm font-normal text-parkpal-subtleText">
-                Allow app to access your location
-              </p>
-            </Label>
-            <Switch id="location-services" defaultChecked />
-          </div>
-          
-          <div className="flex items-center justify-between">
-            <Label htmlFor="notifications" className="flex-1">
-              Notifications
-              <p className="text-sm font-normal text-parkpal-subtleText">
-                Receive parking alerts and reminders
-              </p>
+            <Label htmlFor="notifications" className="flex items-center gap-2">
+              <Bell size={16} />
+              <div>
+                <span className="block">Notifications</span>
+                <p className="text-sm font-normal text-parkpal-subtleText">
+                  Receive parking alerts and reminders
+                </p>
+              </div>
             </Label>
             <Switch id="notifications" defaultChecked />
           </div>
         </CardContent>
       </Card>
       
-      <Card>
+      <Card className="border-parkpal-primary/20">
         <CardHeader className="pb-3">
-          <CardTitle>Privacy</CardTitle>
-          <CardDescription>Manage your data and privacy settings</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="stealth-mode" className="flex-1">
-              Stealth mode
-              <p className="text-sm font-normal text-parkpal-subtleText">
-                Only track location when manually activated
-              </p>
-            </Label>
-            <Switch id="stealth-mode" />
+          <div className="flex items-center gap-2">
+            <div className="bg-parkpal-primary/10 rounded-full p-1">
+              <CreditCard className="h-5 w-5 text-parkpal-primary" />
+            </div>
+            <CardTitle>Premium Features</CardTitle>
           </div>
-          
-          <div className="flex items-center justify-between">
-            <Label htmlFor="data-collection" className="flex-1">
-              Data collection
-              <p className="text-sm font-normal text-parkpal-subtleText">
-                Allow anonymous usage data collection
-              </p>
-            </Label>
-            <Switch id="data-collection" defaultChecked />
-          </div>
-        </CardContent>
-      </Card>
-      
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle>Premium Features</CardTitle>
           <CardDescription>Upgrade to access premium features</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4">
             <div className="flex items-start">
               <div className="bg-parkpal-primary/10 rounded-full p-1 mr-3 mt-0.5">
-                <div className="w-4 h-4 bg-parkpal-primary rounded-full" />
+                <Mic className="w-4 h-4 text-parkpal-primary" />
               </div>
               <div>
-                <p className="font-medium">Smart Alerts</p>
+                <p className="font-medium">Voice Control</p>
                 <p className="text-sm text-parkpal-subtleText">
-                  Get alerts when you're parked in time-limited zones
+                  "Hey ParkPal, where's my car?" or "ParkPal, find my car"
                 </p>
               </div>
             </div>
             
             <div className="flex items-start">
               <div className="bg-parkpal-primary/10 rounded-full p-1 mr-3 mt-0.5">
-                <div className="w-4 h-4 bg-parkpal-primary rounded-full" />
+                <Wallet className="w-4 h-4 text-parkpal-primary" />
               </div>
               <div>
-                <p className="font-medium">Multiple Vehicle Profiles</p>
+                <p className="font-medium">In-App Wallet</p>
                 <p className="text-sm text-parkpal-subtleText">
-                  Track multiple vehicles simultaneously
+                  Add payment methods and auto-pay parking meters
                 </p>
               </div>
             </div>
             
             <div className="flex items-start">
               <div className="bg-parkpal-primary/10 rounded-full p-1 mr-3 mt-0.5">
-                <div className="w-4 h-4 bg-parkpal-primary rounded-full" />
+                <div className="w-4 h-4 bg-parkpal-primary rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">P</span>
+                </div>
               </div>
               <div>
-                <p className="font-medium">Home Screen Widget</p>
+                <p className="font-medium">Tap-to-Pay</p>
                 <p className="text-sm text-parkpal-subtleText">
-                  Quick access to park or find your car
+                  Connect to partner meter systems for contactless payment
                 </p>
               </div>
             </div>
           </div>
           
-          <Button className="w-full mt-4">
+          <Button className="w-full mt-4 bg-gradient-to-r from-parkpal-primary to-blue-500 hover:from-parkpal-primary/90 hover:to-blue-600">
             Upgrade to Premium
           </Button>
         </CardContent>
