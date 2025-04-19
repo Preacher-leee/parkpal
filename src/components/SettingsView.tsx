@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   Card,
@@ -15,32 +14,12 @@ import { toast } from "sonner";
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 
 const SettingsView: React.FC = () => {
   const [isOffline, setIsOffline] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
-
-  // Query subscription status
-  const { data: subscriptionData } = useQuery({
-    queryKey: ['subscription'],
-    queryFn: async () => {
-      if (!user) return null;
-      const { data, error } = await supabase
-        .from('subscribers')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-      
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user
-  });
-
-  const isPremium = subscriptionData?.subscribed;
 
   const handlePremiumUpgrade = async () => {
     if (!user) {
@@ -58,10 +37,15 @@ const SettingsView: React.FC = () => {
       setIsLoading(true);
       const { data, error } = await supabase.functions.invoke('create-checkout');
       
-      if (error) throw error;
-      if (!data?.url) throw new Error('No checkout URL returned');
+      if (error) {
+        throw new Error(error.message);
+      }
       
-      window.location.href = data.url;
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error('No checkout URL returned');
+      }
     } catch (error) {
       console.error('Error creating checkout session:', error);
       toast.error("Couldn't create checkout session", {
@@ -130,17 +114,15 @@ const SettingsView: React.FC = () => {
         </CardContent>
       </Card>
       
-      <Card className={`border-parkpal-primary/20 ${isPremium ? 'bg-green-50/50' : ''}`}>
+      <Card className="border-parkpal-primary/20">
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
             <div className="bg-parkpal-primary/10 rounded-full p-1">
               <CreditCard className="h-5 w-5 text-parkpal-primary" />
             </div>
-            <CardTitle>Premium Features {isPremium && '(Active)'}</CardTitle>
+            <CardTitle>Premium Features</CardTitle>
           </div>
-          <CardDescription>
-            {isPremium ? 'Manage your premium features' : 'Upgrade to access premium features'}
-          </CardDescription>
+          <CardDescription>Upgrade to access premium features</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4">
@@ -154,7 +136,6 @@ const SettingsView: React.FC = () => {
                   "Hey ParkPal, where's my car?" or "ParkPal, find my car"
                 </p>
               </div>
-              {isPremium && <Switch className="ml-auto" />}
             </div>
             
             <div className="flex items-start">
@@ -167,7 +148,6 @@ const SettingsView: React.FC = () => {
                   Add payment methods and auto-pay parking meters
                 </p>
               </div>
-              {isPremium && <Switch className="ml-auto" />}
             </div>
             
             <div className="flex items-start">
@@ -182,26 +162,23 @@ const SettingsView: React.FC = () => {
                   Connect to partner meter systems for contactless payment
                 </p>
               </div>
-              {isPremium && <Switch className="ml-auto" />}
             </div>
           </div>
           
-          {!isPremium && (
-            <Button 
-              className="w-full mt-4 bg-gradient-to-r from-parkpal-primary to-blue-500 hover:from-parkpal-primary/90 hover:to-blue-600"
-              onClick={handlePremiumUpgrade}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                "Upgrade to Premium"
-              )}
-            </Button>
-          )}
+          <Button 
+            className="w-full mt-4 bg-gradient-to-r from-parkpal-primary to-blue-500 hover:from-parkpal-primary/90 hover:to-blue-600"
+            onClick={handlePremiumUpgrade}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              "Upgrade to Premium"
+            )}
+          </Button>
         </CardContent>
       </Card>
       
