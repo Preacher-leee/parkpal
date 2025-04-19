@@ -1,71 +1,91 @@
-## Project info
+ 🅿️ ParkPal – Smart Parking Companion
 
-**URL**: https://lovable.dev/projects/5f8a4b18-512b-4d65-a86d-c4489f640a40
+ParkPal is a React-based application that helps users find and mark their parking spots using **Amazon Location Service**. It displays a real-time map, tracks current location, and manages parking durations with contextual alerts.
 
-## How can I edit this code?
+---
 
-There are several ways of editing your application.
+## 🚀 Features
 
-**Use Lovable**
+- 🌍 **Interactive Map** powered by **Amazon Location Service**
+- 📍 Real-time location tracking
+- 🅿️ Set and view parking spot markers
+- ⏱️ Intelligent parking timers with visual warnings
+- 📦 Clean, component-based architecture using React and Tailwind CSS
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/5f8a4b18-512b-4d65-a86d-c4489f640a40) and start prompting.
+---
 
-Changes made via Lovable will be committed automatically to this repo.
+## 🧰 Tech Stack
 
-**Use your preferred IDE**
+- **React + TypeScript**
+- **Tailwind CSS**
+- **Amazon Location Service (Map + Places)**
+- **MapLibre GL** (for rendering AWS maps)
+- Context API for state management
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+---
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## 🔧 Setup Instructions
 
-Follow these steps:
+### 1. **Clone the Repository**
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+```bash
+git clone https://github.com/Preacher-leee/parkpal.git
+cd parkpal
+2. Install Dependencies
+bash
+Copy
+Edit
+npm install
+3. Configure Amazon Location Service
+Make sure you have an Amazon Location Service map created.
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+✅ Replace this placeholder in MapComponent.tsx:
+ts
+Copy
+Edit
+const mapName = "YourAmazonMapName"; // <-- Replace with your actual map name
+✅ Set your public API key (from AWS Console):
+ts
+Copy
+Edit
+const apiKey = "v1.public.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
+4. Run the App
+bash
+Copy
+Edit
 npm run dev
-```
+The app should launch at http://localhost:3000
 
-**Edit a file directly in GitHub**
+🗺 Amazon Location Integration
+This project uses:
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+🗺️ Maps – For rendering and tracking
 
-**Use GitHub Codespaces**
+🔍 (Optional) Place Index – If implementing search or autocomplete
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+🚘 (Optional) Routing – For directions to/from parking
 
-## What technologies are used for this project?
+👉 You can manage these from the Amazon Location Service Console
 
-This project is built with:
+📁 File Structure Highlights
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+File	Purpose
+MapComponent.tsx	Core map UI logic with AWS integration
+context/ParkingContext.tsx	Manages user/parking location + timer
+components/	Reusable UI elements
+pages/	Main route for the app (index.tsx)
+🔐 Security Note
+This project uses a public API key for Amazon Location Service, which is safe for map-only operations. For secure data operations (like geofencing or routing), you should consider server-side authorization or Cognito Identity Pools.
 
-## How can I deploy this project?
+📦 Future Improvements
+Place search and autocomplete using Amazon's Place Index
 
-Simply open [Lovable](https://lovable.dev/projects/5f8a4b18-512b-4d65-a86d-c4489f640a40) and click on Share -> Publish.
+Routing and turn-by-turn navigation
 
-## Can I connect a custom domain to my Lovable project?
+User account and parking history
 
-Yes it is!
+Dark mode toggle
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+👨‍💻 Maintainer
+@Preacher-leee – feel free to submit issues or improvements via PR.
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
