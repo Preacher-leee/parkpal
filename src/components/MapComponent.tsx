@@ -31,7 +31,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ className }) => {
     if (!mapContainer.current) return;
     
     const token = getMapboxToken() || PLACEHOLDER_TOKEN;
-    mapboxgl.accessToken = pk.eyJ1IjoidHJhdmlzZ29yZG9udGxlZWFwcHMiLCJhIjoiY205bnczMWN3MHRoNTJycG1ua3RqbmpsaiJ9.ySQSrfZjRvaUEyDwwcG3Jw;
+    mapboxgl.accessToken = token;
     
     try {
       const newMap = new mapboxgl.Map({
